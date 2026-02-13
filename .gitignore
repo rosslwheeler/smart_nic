@@ -1,0 +1,46 @@
+# Build artifacts
+build/
+cmake-build-*/
+build-*/
+build-coverage/
+build-asan/
+
+build_coverage/
+coverage-html/
+coverage.info
+
+# Compiled objects
+*.o
+*.obj
+*.a
+*.lib
+*.dll
+*.so
+*.dylib
+*.exe
+
+# CMake aux files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Testing/
+CTestTestfile.cmake
+compile_commands.json
+
+# Editor/OS noise
+.DS_Store
+*.log
+
+# Backup directories
+external/bit_fields.bak
+third-party/bit_fields.bak
+
+# Reference documentation (external sources)
+docs/RoCEv2-emulation_AP.pdf
+docs/RoCEv2-emulation_AP.pdf:Zone.Identifier
+docs/RoCEv2-emulation_AP.txt
+docs/fpga-implementation-of-rocev2.txt
+docs/roce-storage-implementation-over-nxos-vxlan-fabrics.html
+docs/roce-storage-implementation-over-nxos-vxlan-fabrics.txt
+docs/rocev2-on-nexus9k.txt
+docs/rocev2_ietf_draft.txt

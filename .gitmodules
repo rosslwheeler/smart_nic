@@ -1,0 +1,6 @@
+[submodule "third-party/tracy"]
+	path = third-party/tracy
+	url = https://github.com/wolfpld/tracy.git
+[submodule "libs/bit_fields"]
+	path = libs/bit_fields
+	url = https://github.com/rosslwheeler/bit_fields.git

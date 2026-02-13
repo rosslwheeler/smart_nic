@@ -1,0 +1,122 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  build:
+    name: ${{ matrix.os }} / ${{ matrix.compiler }} ${{ matrix.version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # GCC 14 (requires GCC 13+ for <format> support)
+          - os: ubuntu-24.04
+            compiler: gcc
+            version: 14
+            cc: gcc-14
+            cxx: g++-14
+
+          # Clang versions (requires libstdc++ 13+ for <format>, so ubuntu-24.04)
+          - os: ubuntu-24.04
+            compiler: clang
+            version: 18
+            cc: clang-18
+            cxx: clang++-18
+
+          # macOS
+          - os: macos-latest
+            compiler: appleclang
+            version: latest
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install GCC (Linux)
+        if: runner.os == 'Linux' && matrix.compiler == 'gcc'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ${{ matrix.cxx }}
+
+      - name: Install Clang (Linux)
+        if: runner.os == 'Linux' && matrix.compiler == 'clang'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-${{ matrix.version }}
+
+      - name: Configure (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          cmake -B build \
+            -DCMAKE_C_COMPILER=${{ matrix.cc }} \
+            -DCMAKE_CXX_COMPILER=${{ matrix.cxx }} \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DNIC_ENABLE_TRACY=ON \
+            -DNIC_WARNINGS_AS_ERRORS=ON
+
+      - name: Configure (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cmake -B build \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DNIC_ENABLE_TRACY=ON \
+            -DNIC_WARNINGS_AS_ERRORS=ON
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Test
+        run: ctest --test-dir build --output-on-failure -C Release
+
+  sanitizers:
+    name: AddressSanitizer + UBSan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Build and test with sanitizers
+        run: make asan
+
+  coverage:
+    name: Code Coverage
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Install dependencies
+        run: sudo apt-get update && sudo apt-get install -y lcov g++-14
+
+      - name: Generate coverage report
+        run: make coverage CXX=g++-14 GCOV_TOOL=gcov-14
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v6
+        with:
+          name: coverage-report
+          path: build-coverage/coverage/html/
+
+  format:
+    name: clang-format
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Install clang-format-18
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format-18
+
+      - name: Check formatting
+        run: |
+          find include src tests driver -name '*.h' -o -name '*.cpp' | \
+            xargs clang-format-18 --dry-run --Werror
